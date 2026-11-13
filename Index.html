@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherPro - Designed by Ubaid Awan</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            transition: background 1s ease;
+        }
+
+        /* Live Rain Animation Layer */
+        .rain-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            display: none;
+        }
+        .raindrop {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.75);
+            width: 2px; height: 18px;
+            animation: fall 0.4s linear infinite;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh); }
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* Top Branding */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding: 0 4px;
+        }
+        .app-logo {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+        .designer-tag {
+            font-size: 11px;
+            font-weight: 600;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        /* Search Bar */
+        .search-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 12px 18px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.65);
+        }
+        .search-box button {
+            padding: 0 20px;
+            border-radius: 25px;
+            border: none;
+            background: #38bdf8;
+            color: #0f172a;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Quick Select Cities */
+        .quick-cities {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            scrollbar-width: none;
+            margin-bottom: 10px;
+        }
+        .quick-cities::-webkit-scrollbar { display: none; }
+        .q-btn {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .q-btn:active { background: #38bdf8; color: #0f172a; }
+
+        /* Main Glass Card */
+        .main-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 28px;
+            padding: 22px;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+        }
+
+        .current-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .city-info h2 { font-size: 22px; font-weight: 700; }
+        .city-info p { font-size: 13px; color: #cbd5e1; margin-top: 3px; }
+        .temp-display { display: flex; align-items: center; gap: 10px; }
+        .temp-val { font-size: 52px; font-weight: 800; line-height: 1; }
+        .weather-emoji { font-size: 46px; }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.22);
+            padding: 10px 14px;
+            border-radius: 14px;
+            margin-top: 14px;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+        .stats-bar b { color: #38bdf8; font-size: 13px; }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.65);
+            margin: 18px 0 10px;
+        }
+
+        /* Hourly Horizontal Scroll */
+        .hourly-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: none;
+        }
+        .hourly-scroll::-webkit-scrollbar { display: none; }
+        .hour-box {
+            flex: 0 0 auto;
+            min-width: 64px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 10px 8px;
+            text-align: center;
+        }
+        .h-time { font-size: 11px; color: #cbd5e1; }
+        .h-icon { font-size: 22px; margin: 6px 0; }
+        .h-temp { font-size: 14px; font-weight: 700; }
+
+        /* 7-Day Forecast */
+        .daily-list { display: flex; flex-direction: column; gap: 8px; }
+        .day-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 12px 14px;
+            border-radius: 16px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+        }
+        .day-row:active { background: rgba(255, 255, 255, 0.18); }
+        .d-name { width: 35% !important; font-size: 14px; font-weight: 600; }
+        .d-icon { width: 25% !important; text-align: center; font-size: 22px; }
+        .d-temp { width: 40% !important; text-align: right; font-size: 14px; font-weight: 700; }
+
+        /* Google Weather Style Popup Modal */
+        .modal-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-box {
+            background: #1e293b;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            width: 100%;
+            max-width: 330px;
+            border-radius: 26px;
+            padding: 24px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+        .modal-big-icon { font-size: 55px; margin: 10px 0; }
+        .modal-box h3 { font-size: 18px; color: #38bdf8; margin-bottom: 4px; }
+        .modal-date { font-size: 12px; color: #94a3b8; margin-bottom: 16px; }
+        .m-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; }
+        .m-close { width: 100%; margin-top: 18px; padding: 12px; border-radius: 16px; border: none; background: #38bdf8; color: #0f172a; font-weight: 700; font-size: 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="rain-layer" id="rainLayer"></div>
+
+    <!-- Detail Modal -->
+    <div class="modal-bg" id="detailModal" onclick="if(event.target===this) closeModal()">
+        <div class="modal-box" id="modalContent"></div>
+    </div>
+
+    <div class="wrapper">
+        <!-- Top Header -->
+        <div class="top-bar">
+            <span class="app-logo">⛅ WeatherPro</span>
+            <span class="designer-tag">Designed by Ubaid Awan</span>
+        </div>
+
+        <!-- Search Bar with Datalist Suggestions -->
+        <div class="search-box">
+            <input type="text" id="cityInput" list="citiesList" placeholder="Type city (e.g. Lahore, London)...">
+            <datalist id="citiesList">
+                <option value="Garhi Habibullah">
+                <option value="Islamabad">
+                <option value="Lahore">
+                <option value="Karachi">
+                <option value="Peshawar">
+                <option value="London">
+                <option value="New York">
+                <option value="Tokyo">
+                <option value="Dubai">
+                <option value="Paris">
+                <option value="Sydney">
+            </datalist>
+            <button onclick="triggerSearch()">Search</button>
+        </div>
+
+        <!-- Quick Select Cities -->
+        <div class="quick-cities">
+            <button class="q-btn" onclick="loadCityWeather('Garhi Habibullah')">Garhi Habibullah</button>
+            <button class="q-btn" onclick="loadCityWeather('Islamabad')">Islamabad</button>
+            <button class="q-btn" onclick="loadCityWeather('Lahore')">Lahore</button>
+            <button class="q-btn" onclick="loadCityWeather('London')">London</button>
+            <button class="q-btn" onclick="loadCityWeather('New York')">New York</button>
+            <button class="q-btn" onclick="loadCityWeather('Tokyo')">Tokyo</button>
+            <button class="q-btn" onclick="loadCityWeather('Dubai')">Dubai</button>
+        </div>
+
+        <!-- Weather Card -->
+        <div class="main-card" id="weatherCard"></div>
+    </div>
+
+    <script>
+        const weatherDB = {
+            "garhi habibullah": {
+                name: "Garhi Habibullah", country: "Pakistan",
+                temp: 22, feels: 23, humidity: 88, wind: 12, rain: 90,
+                condition: "Rainy Showers", icon: "🌧️", type: "rain",
+                hourly: [
+                    {time: "Now", icon: "🌧️", temp: 22},
+                    {time: "1 PM", icon: "🌧️", temp: 23},
+                    {time: "2 PM", icon: "⛈️", temp: 21},
+                    {time: "3 PM", icon: "🌧️", temp: 20},
+                    {time: "4 PM", icon: "🌧️", temp: 19},
+                    {time: "5 PM", icon: "☁️", temp: 19}
+                ],
+                daily: [
+                    {day: "Today", icon: "🌧️", label: "Rainy Showers", max: 24, min: 18, rain: 90, sunrise: "06:15 AM", sunset: "05:10 PM"},
+                    {day: "Sunday", icon: "🌧️", label: "Heavy Rain", max: 21, min: 16, rain: 95, sunrise: "06:16 AM", sunset: "05:09 PM"},
+                    {day: "Monday", icon: "⛅", label: "Partly Cloudy", max: 25, min: 17, rain: 20, sunrise: "06:17 AM", sunset: "05:08 PM"},
+                    {day: "Tuesday", icon: "☀️", label: "Sunny & Clear", max: 28, min: 19, rain: 5, sunrise: "06:18 AM", sunset: "05:07 PM"},
+                    {day: "Wednesday", icon: "☀️", label: "Sunny", max: 29, min: 20, rain: 0, sunrise: "06:19 AM", sunset: "05:07 PM"},
+                    {day: "Thursday", icon: "⛅", label: "Cloudy", max: 26, min: 18, rain: 15, sunrise: "06:20 AM", sunset: "05:06 PM"},
+                    {day: "Friday", icon: "🌧️", label: "Showers", max: 23, min: 17, rain: 80, sunrise: "06:21 AM", sunset: "05:05 PM"}
+                ]
+            },
+            "islamabad": {
+                name: "Islamabad", country: "Pakistan",
+                temp: 31, feels: 33, humidity: 45, wind: 8, rain: 5,
+                condition: "Sunny & Clear", icon: "☀️", type: "sunny",
+                hourly: [
+                    {time: "Now", icon: "☀️", temp: 31},
+                    {time: "1 PM", icon: "☀️", temp: 33},
+                    {time: "2 PM", icon: "☀️", temp: 34},
+                    {time: "3 PM", icon: "☀️", temp: 32},
+                    {time: "4 PM", icon: "⛅", temp: 30},
+                    {time: "5 PM", icon: "⛅", temp: 28}
+                ],
+                daily: [
+                    {day: "Today", icon: "☀️", label: "Sunny & Clear", max: 34, min: 22, rain: 5, sunrise: "06:10 AM", sunset: "05:15 PM"},
+                    {day: "Sunday", icon: "☀️", label: "Sunny", max: 35, min: 23, rain: 0, sunrise: "06:11 AM", sunset: "05:14 PM"},
+                    {day: "Monday", icon: "⛅", label: "Partly Cloudy", max: 32, min: 21, rain: 10, sunrise: "06:12 AM", sunset: "05:13 PM"},
+                    {day: "Tuesday", icon: "☀️", label: "Sunny", max: 33, min: 21, rain: 0, sunrise: "06:13 AM", sunset: "05:12 PM"},
+                    {day: "Wednesday", icon: "☀️", label: "Clear Sky", max: 34, min: 22, rain: 0, sunrise: "06:14 AM", sunset: "05:11 PM"},
+                    {day: "Thursday", icon: "⛅", label: "Cloudy", max: 30, min: 20, rain: 20, sunrise: "06:15 AM", sunset: "05:10 PM"},
+                    {day: "Friday", icon: "☀️", label: "Sunny", max: 32, min: 21, rain: 5, sunrise: "06:16 AM", sunset: "05:09 PM"}
+                ]
+            },
+            "lahore": {
+                name: "Lahore", country: "Pakistan",
+                temp: 34, feels: 37, humidity: 40, wind: 10, rain: 0,
+                condition: "Sunny & Clear", icon: "☀️", type: "sunny",
+                hourly: [
+                    {time: "Now", icon: "☀️", temp: 34},
+                    {time: "1 PM", icon: "☀️", temp: 36},
+                    {time: "2 PM", icon: "☀️", temp: 37},
+                    {time: "3 PM", icon: "☀️", temp: 36},
+                    {time: "4 PM", icon: "☀️", temp: 35},
+                    {time: "5 PM", icon: "🌤️", temp: 32}
+                ],
+                daily: [
+                    {day: "Today", icon: "☀️", label: "Sunny & Clear", max: 37, min: 25, rain: 0, sunrise: "06:12 AM", sunset: "05:20 PM"},
+                    {day: "Sunday", icon: "☀️", label: "Sunny", max: 38, min: 26, rain: 0, sunrise: "06:13 AM", sunset: "05:19 PM"},
+                    {day: "Monday", icon: "☀️", label: "Hot & Sunny", max: 38, min: 25, rain: 0, sunrise: "06:14 AM", sunset: "05:18 PM"},
+                    {day: "Tuesday", icon: "⛅", label: "Partly Cloudy", max: 35, min: 24, rain: 10, sunrise: "06:15 AM", sunset: "05:17 PM"},
+                    {day: "Wednesday", icon: "☀️", label: "Sunny", max: 36, min: 24, rain: 0, sunrise: "06:16 AM", sunset: "05:16 PM"},
+                    {day: "Thursday", icon: "☀️", label: "Sunny", max: 37, min: 25, rain: 0, sunrise: "06:17 AM", sunset: "05:15 PM"},
+                    {day: "Friday", icon: "☀️", label: "Sunny", max: 36, min: 24, rain: 0, sunrise: "06:18 AM", sunset: "05:14 PM"}
+                ]
+            },
+            "london": {
+                name: "London", country: "United Kingdom",
+                temp: 14, feels: 12, humidity: 80, wind: 22, rain: 60,
+                condition: "Cloudy Showers", icon: "☁️", type: "cloudy",
+                hourly: [
+                    {time: "Now", icon: "☁️", temp: 14},
+                    {time: "1 PM", icon: "🌧️", temp: 13},
+                    {time: "2 PM", icon: "🌧️", temp: 13},
+                    {time: "3 PM", icon: "☁️", temp: 14},
+                    {time: "4 PM", icon: "☁️", temp: 15},
+                    {time: "5 PM", icon: "⛅", temp: 14}
+                ],
+                daily: [
+                    {day: "Today", icon: "☁️", label: "Cloudy Showers", max: 15, min: 10, rain: 60, sunrise: "07:05 AM", sunset: "04:30 PM"},
+                    {day: "Sunday", icon: "🌧️", label: "Rainy", max: 13, min: 9, rain: 85, sunrise: "07:07 AM", sunset: "04:28 PM"},
+                    {day: "Monday", icon: "⛅", label: "Partly Cloudy", max: 16, min: 10, rain: 20, sunrise: "07:09 AM", sunset: "04:26 PM"},
+                    {day: "Tuesday", icon: "☁️", label: "Overcast", max: 14, min: 8, rain: 40, sunrise: "07:11 AM", sunset: "04:25 PM"},
+                    {day: "Wednesday", icon: "☀️", label: "Sunny Intervals", max: 17, min: 11, rain: 10, sunrise: "07:13 AM", sunset: "04:23 PM"},
+                    {day: "Thursday", icon: "🌧️", label: "Rain", max: 12, min: 8, rain: 90, sunrise: "07:15 AM", sunset: "04:21 PM"},
+                    {day: "Friday", icon: "☁️", label: "Cloudy", max: 14, min: 9, rain: 30, sunrise: "07:17 AM", sunset: "04:20 PM"}
+                ]
+            },
+            "new york": {
+                name: "New York", country: "USA",
+                temp: 8, feels: 5, humidity: 65, wind: 18, rain: 10,
+                condition: "Clear Night", icon: "🌙", type: "night",
+                hourly: [
+                    {time: "Now", icon: "🌙", temp: 8},
+                    {time: "1 PM", icon: "🌙", temp: 7},
+                    {time: "2 PM", icon: "🌙", temp: 6},
+                    {time: "3 PM", icon: "🌙", temp: 6},
+                    {time: "4 PM", icon: "🌙", temp: 5},
+                    {time: "5 PM", icon: "🌙", temp: 5}
+                ],
+                daily: [
+                    {day: "Today", icon: "🌙", label: "Clear Night", max: 12, min: 5, rain: 10, sunrise: "06:40 AM", sunset: "04:45 PM"},
+                    {day: "Sunday", icon: "☀️", label: "Sunny Day", max: 14, min: 6, rain: 0, sunrise: "06:41 AM", sunset: "04:44 PM"},
+                    {day: "Monday", icon: "⛅", label: "Partly Cloudy", max: 13, min: 7, rain: 15, sunrise: "06:42 AM", sunset: "04:43 PM"},
+                    {day: "Tuesday", icon: "🌧️", label: "Rainy", max: 10, min: 4, rain: 80, sunrise: "06:44 AM", sunset: "04:42 PM"},
+                    {day: "Wednesday", icon: "☀️", label: "Sunny", max: 15, min: 8, rain: 0, sunrise: "06:45 AM", sunset: "04:42 PM"},
+                    {day: "Thursday", icon: "☁️", label: "Cloudy", max: 11, min: 5, rain: 35, sunrise: "06:46 AM", sunset: "04:41 PM"},
+                    {day: "Friday", icon: "☀️", label: "Clear", max: 13, min: 6, rain: 5, sunrise: "06:47 AM", sunset: "04:40 PM"}
+                ]
+            },
+            "tokyo": {
+                name: "Tokyo", country: "Japan",
+                temp: 19, feels: 19, humidity: 55, wind: 9, rain: 0,
+                condition: "Sunny & Clear", icon: "☀️", type: "sunny",
+                hourly: [
+                    {time: "Now", icon: "☀️", temp: 19},
+                    {time: "1 PM", icon: "☀️", temp: 20},
+                    {time: "2 PM", icon: "☀️", temp: 21},
+                    {time: "3 PM", icon: "☀️", temp: 20},
+                    {time: "4 PM", icon: "🌤️", temp: 18},
+                    {time: "5 PM", icon: "⛅", temp: 17}
+                ],
+                daily: [
+                    {day: "Today", icon: "☀️", label: "Sunny & Clear", max: 21, min: 12, rain: 0, sunrise: "06:05 AM", sunset: "04:50 PM"},
+                    {day: "Sunday", icon: "☀️", label: "Sunny", max: 22, min: 13, rain: 0, sunrise: "06:06 AM", sunset: "04:49 PM"},
+                    {day: "Monday", icon: "⛅", label: "Partly Cloudy", max: 20, min: 11, rain: 10, sunrise: "06:07 AM", sunset: "04:48 PM"},
+                    {day: "Tuesday", icon: "🌧️", label: "Rain Showers", max: 17, min: 10, rain: 90, sunrise: "06:08 AM", sunset: "04:48 PM"},
+                    {day: "Wednesday", icon: "☀️", label: "Sunny", max: 19, min: 10, rain: 0, sunrise: "06:09 AM", sunset: "04:47 PM"},
+                    {day: "Thursday", icon: "☀️", label: "Sunny", max: 21, min: 12, rain: 0, sunrise: "06:10 AM", sunset: "04:46 PM"},
+                    {day: "Friday", icon: "☁️", label: "Cloudy", max: 18, min: 11, rain: 20, sunrise: "06:11 AM", sunset: "04:45 PM"}
+                ]
+            },
+            "dubai": {
+                name: "Dubai", country: "UAE",
+                temp: 35, feels: 38, humidity: 50, wind: 14, rain: 0,
+                condition: "Sunny & Hot", icon: "☀️", type: "sunny",
+                hourly: [
+                    {time: "Now", icon: "☀️", temp: 35},
+                    {time: "1 PM", icon: "☀️", temp: 37},
+                    {time: "2 PM", icon: "☀️", temp: 38},
+                    {time: "3 PM", icon: "☀️", temp: 36},
+                    {time: "4 PM", icon: "☀️", temp: 34},
+                    {time: "5 PM", icon: "🌤️", temp: 32}
+                ],
+                daily: [
+                    {day: "Today", icon: "☀️", label: "Sunny & Hot", max: 38, min: 27, rain: 0, sunrise: "06:30 AM", sunset: "05:35 PM"},
+                    {day: "Sunday", icon: "☀️", label: "Sunny", max: 39, min: 28, rain: 0, sunrise: "06:31 AM", sunset: "05:34 PM"},
+                    {day: "Monday", icon: "☀️", label: "Sunny", max: 38, min: 27, rain: 0, sunrise: "06:32 AM", sunset: "05:33 PM"},
+                    {day: "Tuesday", icon: "☀️", label: "Clear", max: 37, min: 26, rain: 0, sunrise: "06:33 AM", sunset: "05:32 PM"},
+                    {day: "Wednesday", icon: "☀️", label: "Sunny", max: 38, min: 27, rain: 0, sunrise: "06:34 AM", sunset: "05:31 PM"},
+                    {day: "Thursday", icon: "☀️", label: "Hot", max: 40, min: 29, rain: 0, sunrise: "06:35 AM", sunset: "05:30 PM"},
+                    {day: "Friday", icon: "☀️", label: "Sunny", max: 39, min: 28, rain: 0, sunrise: "06:36 AM", sunset: "05:29 PM"}
+                ]
+            }
+        };
+
+        let currentActiveData = null;
+
+        function initRain() {
+            const layer = document.getElementById('rainLayer');
+            layer.innerHTML = '';
+            for (let i = 0; i < 60; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'raindrop';
+                drop.style.left = Math.random() * 100 + 'vw';
+                drop.style.animationDuration = (Math.random() * 0.3 + 0.3) + 's';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                layer.appendChild(drop);
+            }
+        }
+        initRain();
+
+        function loadCityWeather(cityName) {
+            const key = cityName.toLowerCase().trim();
+            if (weatherDB[key]) {
+                currentActiveData = weatherDB[key];
+                renderWeatherApp(currentActiveData);
+            } else {
+                currentActiveData = {
+                    name: cityName, country: "Global",
+                    temp: 24, feels: 25, humidity: 55, wind: 11, rain: 10,
+                    condition: "Pleasant Weather", icon: "🌤️", type: "sunny",
+                    hourly: [
+                        {time: "Now", icon: "🌤️", temp: 24},
+                        {time: "1 PM", icon: "☀️", temp: 26},
+                        {time: "2 PM", icon: "☀️", temp: 27},
+                        {time: "3 PM", icon: "⛅", temp: 25},
+                        {time: "4 PM", icon: "⛅", temp: 23},
+                        {time: "5 PM", icon: "🌙", temp: 21}
+                    ],
+                    daily: [
+                        {day: "Today", icon: "🌤️", label: "Pleasant Weather", max: 27, min: 17, rain: 10, sunrise: "06:15 AM", sunset: "05:10 PM"},
+                        {day: "Sunday", icon: "☀️", label: "Sunny", max: 29, min: 18, rain: 0, sunrise: "06:16 AM", sunset: "05:09 PM"},
+                        {day: "Monday", icon: "🌧️", label: "Rain Showers", max: 21, min: 14, rain: 85, sunrise: "06:17 AM", sunset: "05:08 PM"},
+                        {day: "Tuesday", icon: "⛅", label: "Cloudy", max: 23, min: 15, rain: 35, sunrise: "06:18 AM", sunset: "05:07 PM"},
+                        {day: "Wednesday", icon: "☀️", label: "Sunny", max: 26, min: 16, rain: 0, sunrise: "06:19 AM", sunset: "05:07 PM"},
+                        {day: "Thursday", icon: "☀️", label: "Clear Sky", max: 28, min: 17, rain: 0, sunrise: "06:20 AM", sunset: "05:06 PM"},
+                        {day: "Friday", icon: "⛅", label: "Partly Cloudy", max: 25, min: 16, rain: 15, sunrise: "06:21 AM", sunset: "05:05 PM"}
+                    ]
+                };
+                renderWeatherApp(currentActiveData);
+            }
+        }
+
+        function triggerSearch() {
+            const input = document.getElementById('cityInput');
+            const val = input.value.trim();
+            if (val !== "") {
+                loadCityWeather(val);
+                input.value = "";
+            }
+        }
+
+        // Allow Enter key to search
+        document.getElementById('cityInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                triggerSearch();
+            }
+        });
+
+        function renderWeatherApp(data) {
+            const card = document.getElementById('weatherCard');
+            const rainLayer = document.getElementById('rainLayer');
+
+            if (data.type === 'rain') {
+                document.body.style.background = "linear-gradient(135deg, #0f172a, #064e3b)";
+                rainLayer.style.display = 'block';
+            } else if (data.type === 'night') {
+                document.body.style.background = "linear-gradient(135deg, #090d16, #1e293b)";
+                rainLayer.style.display = 'none';
+            } else {
+                document.body.style.background = "linear-gradient(135deg, #0284c7, #0369a1)";
+                rainLayer.style.display = 'none';
+            }
+
+            let hourlyHTML = '';
+            data.hourly.forEach(h => {
+                hourlyHTML += `
+                    <div class="hour-box">
+                        <div class="h-time">${h.time}</div>
+                        <div class="h-icon">${h.icon}</div>
+                        <div class="h-temp">${h.temp}°</div>
+                    </div>
+                `;
+            });
+
+            let dailyHTML = '';
+            data.daily.forEach((d, idx) => {
+                dailyHTML += `
+                    <div class="day-row" onclick="openDetailModal(${idx})">
+                        <div class="d-name">${d.day}</div>
+                        <div class="d-icon">${d.icon}</div>
+                        <div class="d-temp">${d.max}° <span style="opacity:0.55; font-weight:400;">/ ${d.min}°</span></div>
+                    </div>
+                `;
+            });
+
+            card.innerHTML = `
+                <div class="current-header">
+                    <div class="city-info">
+                        <h2>${data.name}, ${data.country}</h2>
+                        <p>${data.condition} • Feels like ${data.feels}°</p>
+                    </div>
+                    <div class="temp-display">
+                        <span class="weather-emoji">${data.icon}</span>
+                        <span class="temp-val">${data.temp}°</span>
+                    </div>
+                </div>
+
+                <div class="stats-bar">
+                    <span>Humidity: <b>${data.humidity}%</b></span>
+                    <span>Wind: <b>${data.wind} km/h</b></span>
+                    <span>Rain: <b>${data.rain}%</b></span>
+                </div>
+
+                <div class="section-label">Hourly Forecast</div>
+                <div class="hourly-scroll">${hourlyHTML}</div>
+
+                <div class="section-label">7-Day Forecast (Tap any day)</div>
+                <div class="daily-list">${dailyHTML}</div>
+            `;
+        }
+
+        function openDetailModal(idx) {
+            const d = currentActiveData.daily[idx];
+            document.getElementById('modalContent').innerHTML = `
+                <h3>${d.day}</h3>
+                <div class="modal-date">Weather Details</div>
+                <div class="modal-big-icon">${d.icon}</div>
+                <div style="font-size: 16px; font-weight: bold; color: #f8fafc; margin-bottom: 14px;">${d.label}</div>
+                
+                <div class="m-row"><span>High Temperature:</span> <b>${d.max}°C</b></div>
+                <div class="m-row"><span>Low Temperature:</span> <b>${d.min}°C</b></div>
+                <div class="m-row"><span>Rain Probability:</span> <b>${d.rain}%</b></div>
+                <div class="m-row"><span>Sunrise:</span> <b>${d.sunrise}</b></div>
+                <div class="m-row"><span>Sunset:</span> <b>${d.sunset}</b></div>
+                <button class="m-close" onclick="closeModal()">Close</button>
+            `;
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+
+        window.onload = function() {
+            loadCityWeather('Garhi Habibullah');
+        };
+    </script>
+</body>
+</html>
